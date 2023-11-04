@@ -8,15 +8,16 @@ class AndroidBluetoothPrinter {
 
   /// Print to the first connected bluetooth printer
   static Future<String?> print(
-    String text,
-    String s, {
+    String? text, {
     int? width,
     String? ipAddress,
+    String? base64Image,
   }) async {
     final String? version = await _channel.invokeMethod('print', {
-      "text": text,
+      if (text != null) "text": text,
       if (ipAddress != null) "ip_address": ipAddress,
       if (width != null) "width": width,
+      if (base64Image != null) "image_base64": base64Image,
     });
     return version;
   }

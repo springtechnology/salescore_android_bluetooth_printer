@@ -1,10 +1,15 @@
 package com.renseki.lib.android_bluetooth_printer
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
 import com.dantsu.escposprinter.EscPosPrinter
+import com.dantsu.escposprinter.EscPosPrinterCommands
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
 import com.dantsu.escposprinter.connection.tcp.TcpConnection
+import com.dantsu.escposprinter.exceptions.EscPosConnectionException
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -27,23 +32,16 @@ class AndroidBluetoothPrinterPlugin : FlutterPlugin, MethodCallHandler {
             val text = (call.arguments as? Map<*, *>)?.get("text") as? String
             val width = (call.arguments as? Map<*, *>)?.get("width") as? Int
             val ipAddress = (call.arguments as? Map<*, *>)?.get("ip_address") as? String
+            val imageBase64 = (call.arguments as? Map<*, *>)?.get("image_base64") as? String
 
-            if (text.isNullOrBlank()) {
+            print(text, ipAddress, imageBase64, width,  {
+                result.success("printed")
+            }) { e ->
                 result.error(
-                    "400",
-                    "Please supply this print method with a text to print",
+                    "500",
+                    e.message ?: e.toString(),
                     null,
                 )
-            } else {
-                print(text, ipAddress, width, {
-                    result.success("printed")
-                }) { e ->
-                    result.error(
-                        "500",
-                        e.message ?: e.toString(),
-                        null,
-                    )
-                }
             }
         } else {
             result.notImplemented()
@@ -97,8 +95,9 @@ class AndroidBluetoothPrinterPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun print(
-        text: String,
+        text: String?,
         ipAddress: String?,
+        imageBase64: String?,
         width: Int?,
         onSuccess: () -> Unit,
         onError: (Throwable) -> Unit,
@@ -114,29 +113,41 @@ class AndroidBluetoothPrinterPlugin : FlutterPlugin, MethodCallHandler {
 
         object : Thread() {
             override fun run() {
-                val printer = if (ipAddress.isNullOrBlank()) {
-                    EscPosPrinter(
-                        getPrinter(context.getLastPrinterAddress()),
-                        203,
-                        widthInMM,
-                        maxChars,
-                    )
-                } else {
-                    EscPosPrinter(
-                        TcpConnection(
-                            ipAddress.split(":").first(),
-                            ipAddress.split(":").last().toInt(),
-                            1000,
-                        ),
-                        203,
-                        widthInMM,
-                        maxChars,
-                    )
+                if(imageBase64 == null && text != null){
+                    val printer = if (ipAddress.isNullOrBlank()) {
+                        EscPosPrinter(
+                            getPrinter(context.getLastPrinterAddress()),
+                            203,
+                            widthInMM,
+                            maxChars
+                        );
+                    } else {
+                        EscPosPrinter(
+                            TcpConnection(
+                                ipAddress.split(":").first(),
+                                ipAddress.split(":").last().toInt(),
+                                1000,
+                            ),
+                            203,
+                            widthInMM,
+                            maxChars,
+                        )
+                    }
+                    printer.printFormattedText(text)
+                    printer.disconnectPrinter()
+                }else{
+                    val decodedString: ByteArray = Base64.decode(imageBase64, Base64.DEFAULT)
+                    val decodedByte: Bitmap =
+                        BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+                    val printerCommands =
+                        EscPosPrinterCommands(getPrinter(context.getLastPrinterAddress()))
+                    printerCommands.connect()
+                    printerCommands.reset()
+                    printerCommands.printImage(EscPosPrinterCommands.bitmapToBytes(decodedByte,true))
+                    printerCommands.feedPaper(50)
+                    printerCommands.cutPaper()
+                    printerCommands.disconnect()
                 }
-
-                printer.printFormattedTextAndCut(text)
-
-                printer.disconnectPrinter()
 
                 onSuccess()
             }
