@@ -7,8 +7,8 @@ class AndroidBluetoothPrinter {
       const MethodChannel('android_bluetooth_printer');
 
   /// Print to the first connected bluetooth printer
-  static Future<String?> print(
-    String? text, {
+  static Future<String?> print({
+    String? text,
     int? width,
     String? ipAddress,
     String? base64Image,

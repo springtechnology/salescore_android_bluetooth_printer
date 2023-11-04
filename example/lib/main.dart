@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
               onPressed: () async {
                 try {
                   await AndroidBluetoothPrinter.print(
-                    "Hi",
+                    text: "Hello World",
                     width: 48,
                   );
                 } catch (e) {
