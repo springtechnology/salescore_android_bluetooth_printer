@@ -1,6 +1,6 @@
-name: android_bluetooth_printer
+name: git remote add
 description: A plugin for Android Bluetooth Printer
-version: 0.1.5
+version: 0.1.6
 homepage: https://www.renseki.com
 repository: https://gitlab.com/erickentry/flutter-android-bluetooth-printer
 
