@@ -27,8 +27,9 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 35
     namespace = "com.renseki.lib.android_bluetooth_printer"
+    compileSdkVersion 35
+    
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
